@@ -1,11 +1,12 @@
-using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.SceneManagement;
+using UnityEditor;
+using UnityEngine;
 
-
+//[ExecuteInEditMode]
+[DisallowMultipleComponent]
 public class PrefabLightmapData : MonoBehaviour
 {
+
     [System.Serializable]
     struct RendererInfo
     {
@@ -24,119 +25,65 @@ public class PrefabLightmapData : MonoBehaviour
     [SerializeField]
     RendererInfo[] m_RendererInfo;
     [SerializeField]
-    Texture2D[] m_Lightmaps;
+    Texture2D[] m_LightmapsColor;
+    [SerializeField]
+    Texture2D[] m_LightmapsDir;
     [SerializeField]
     LightInfo[] m_LightInfo;
 
-
     void Awake()
-    {
-        Init();
-    }
-
-    void Init()
     {
         if (m_RendererInfo == null || m_RendererInfo.Length == 0)
             return;
 
         var lightmaps = LightmapSettings.lightmaps;
-        int[] offsetsindexes = new int[m_Lightmaps.Length];
-        int counttotal = lightmaps.Length;
-        List<LightmapData> combinedLightmaps = new List<LightmapData>();
-
-        for (int i = 0; i < m_Lightmaps.Length; i++)
+        var combinedLightmaps = new LightmapData[lightmaps.Length + m_LightmapsColor.Length];
+        lightmaps.CopyTo(combinedLightmaps, 0);
+        for (int i = 0; i < m_LightmapsColor.Length; i++)
         {
-            bool exists = false;
-            for (int j = 0; j < lightmaps.Length; j++)
+            combinedLightmaps[i + lightmaps.Length] = new LightmapData
             {
-
-                if (m_Lightmaps[i] == lightmaps[j].lightmapColor)
-                {
-                    exists = true;
-                    offsetsindexes[i] = j;
-
-                }
-
-            }
-            if (!exists)
-            {
-                offsetsindexes[i] = counttotal;
-                var newlightmapdata = new LightmapData();
-                newlightmapdata.lightmapColor = m_Lightmaps[i];
-                combinedLightmaps.Add(newlightmapdata);
-
-                counttotal += 1;
-
-
-            }
+                lightmapColor = m_LightmapsColor[i],
+                lightmapDir = m_LightmapsDir[i]
+            };
 
         }
 
-        var combinedLightmaps2 = new LightmapData[counttotal];
-
-        lightmaps.CopyTo(combinedLightmaps2, 0);
-        combinedLightmaps.ToArray().CopyTo(combinedLightmaps2, lightmaps.Length);
+        ApplyRendererInfo(m_RendererInfo, lightmaps.Length, m_LightInfo);
         LightmapSettings.lightmapsMode = LightmapsMode.NonDirectional;
-        ApplyRendererInfo(m_RendererInfo, offsetsindexes, m_LightInfo);
-        LightmapSettings.lightmaps = combinedLightmaps2;
+        LightmapSettings.lightmaps = combinedLightmaps;
     }
-
-    void OnEnable()
+    private void Start()
     {
-
-        SceneManager.sceneLoaded += OnSceneLoaded;
-        
-    }
-
-    // called second
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        Init();
-    }
-
-    // called when the game is terminated
-    void OnDisable()
-    {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
+        StaticBatchingUtility.Combine(this.gameObject);
     }
 
 
-
-    static void ApplyRendererInfo(RendererInfo[] infos, int[] lightmapOffsetIndex, LightInfo[] lightsInfo)
+    static void ApplyRendererInfo(RendererInfo[] infos, int lightmapOffsetIndex, LightInfo[] lightsInfo)
     {
         for (int i = 0; i < infos.Length; i++)
         {
             var info = infos[i];
-
-            info.renderer.lightmapIndex = lightmapOffsetIndex[info.lightmapIndex];
-            info.renderer.lightmapScaleOffset = info.lightmapOffsetScale;
-
-            // You have to release shaders.
-            Material[] mat = info.renderer.sharedMaterials;
-            for (int j = 0; j < mat.Length; j++)
+            if (info.renderer != null)
             {
-                if (mat[j] != null && Shader.Find(mat[j].shader.name) != null)
-                    mat[j].shader = Shader.Find(mat[j].shader.name);
+                info.renderer.lightmapIndex = info.lightmapIndex + lightmapOffsetIndex;
+                info.renderer.lightmapScaleOffset = info.lightmapOffsetScale;
             }
-
         }
-
         for (int i = 0; i < lightsInfo.Length; i++)
         {
-            LightBakingOutput bakingOutput = new LightBakingOutput();
-            bakingOutput.isBaked = true;
-            bakingOutput.lightmapBakeType = (LightmapBakeType) lightsInfo[i].lightmapBaketype;
-            bakingOutput.mixedLightingMode =(MixedLightingMode) lightsInfo[i].mixedLightingMode;
-
+            LightBakingOutput bakingOutput = new LightBakingOutput
+            {
+                isBaked = true,
+                lightmapBakeType = (LightmapBakeType)lightsInfo[i].lightmapBaketype,
+                mixedLightingMode = (MixedLightingMode)lightsInfo[i].mixedLightingMode
+            };
             lightsInfo[i].light.bakingOutput = bakingOutput;
-
         }
-
-
     }
 
 #if UNITY_EDITOR
-    [UnityEditor.MenuItem("Assets/Bake Prefab Lightmaps")]
+    [UnityEditor.MenuItem("Tools/Bake Prefab Lightmaps")]
     static void GenerateLightmapInfo()
     {
         if (UnityEditor.Lightmapping.giWorkflowMode != UnityEditor.Lightmapping.GIWorkflowMode.OnDemand)
@@ -144,70 +91,93 @@ public class PrefabLightmapData : MonoBehaviour
             Debug.LogError("ExtractLightmapData requires that you have baked you lightmaps and Auto mode is disabled.");
             return;
         }
-        UnityEditor.Lightmapping.Bake(); 
+        //UnityEditor.Lightmapping.Bake();
 
-        PrefabLightmapData[] prefabs = FindObjectsOfType<PrefabLightmapData>();
+        PrefabLightmapData[] prefabs = GameObject.FindObjectsOfType<PrefabLightmapData>();
 
         foreach (var instance in prefabs)
         {
             var gameObject = instance.gameObject;
             var rendererInfos = new List<RendererInfo>();
-            var lightmaps = new List<Texture2D>();
-            var lightsInfos = new List<LightInfo>();
+            var lightmapsColor = new List<Texture2D>();
+            var lightInfos = new List<LightInfo>();
+            List<Texture2D> lightmapsDir = new List<Texture2D>();
 
-            GenerateLightmapInfo(gameObject, rendererInfos, lightmaps, lightsInfos);
+            GenerateLightmapInfo(gameObject, rendererInfos, lightmapsColor, lightmapsDir,lightInfos);
 
             instance.m_RendererInfo = rendererInfos.ToArray();
-            instance.m_Lightmaps = lightmaps.ToArray();
-            instance.m_LightInfo = lightsInfos.ToArray();
+            instance.m_LightmapsColor = lightmapsColor.ToArray();
+            instance.m_LightmapsDir = lightmapsDir.ToArray();
+            instance.m_LightInfo = lightInfos.ToArray();
 
-            var targetPrefab = UnityEditor.PrefabUtility.GetPrefabParent(gameObject) as GameObject;
+
+            var targetPrefab = PrefabUtility.GetCorrespondingObjectFromOriginalSource(instance.gameObject) as GameObject;
             if (targetPrefab != null)
             {
-                //UnityEditor.Prefab
-                UnityEditor.PrefabUtility.ReplacePrefab(gameObject, targetPrefab);
+                GameObject root = PrefabUtility.GetOutermostPrefabInstanceRoot(instance.gameObject);// 根结点
+                //如果当前预制体是是某个嵌套预制体的一部分（IsPartOfPrefabInstance）
+                if (root != null)
+                {
+                    GameObject rootPrefab = PrefabUtility.GetCorrespondingObjectFromSource(instance.gameObject);
+                    string rootPath = AssetDatabase.GetAssetPath(rootPrefab);
+                    //打开根部预制体
+                    PrefabUtility.UnpackPrefabInstanceAndReturnNewOutermostRoots(root, PrefabUnpackMode.OutermostRoot);
+                    try
+                    {
+                        //Apply各个子预制体的改变
+                        PrefabUtility.ApplyPrefabInstance(instance.gameObject, InteractionMode.AutomatedAction);
+                    }
+                    catch { }
+                    finally
+                    {
+                        //重新更新根预制体
+                        PrefabUtility.SaveAsPrefabAssetAndConnect(root, rootPath, InteractionMode.AutomatedAction);
+                    }
+                }
+                else
+                {
+                    PrefabUtility.ApplyPrefabInstance(instance.gameObject, InteractionMode.AutomatedAction);
+                }
             }
         }
-
-        
     }
 
-    static void GenerateLightmapInfo(GameObject root, List<RendererInfo> rendererInfos, List<Texture2D> lightmaps, List<LightInfo> lightsInfo)
+    static void GenerateLightmapInfo(GameObject root, List<RendererInfo> rendererInfos, List<Texture2D> lightmapsColor, List<Texture2D> lightmapsDir, List<LightInfo> lightsInfo)
     {
-        var renderers = root.GetComponentsInChildren<MeshRenderer>();
+        var renderers = root.GetComponentsInChildren<MeshRenderer>(true);
         foreach (MeshRenderer renderer in renderers)
         {
             if (renderer.lightmapIndex != -1)
             {
                 RendererInfo info = new RendererInfo();
                 info.renderer = renderer;
-                info.lightmapOffsetScale = renderer.lightmapScaleOffset;
-
-                Texture2D lightmap = LightmapSettings.lightmaps[renderer.lightmapIndex].lightmapColor;
-
-                info.lightmapIndex = lightmaps.IndexOf(lightmap);
-                if (info.lightmapIndex == -1)
+                if (renderer.lightmapScaleOffset != Vector4.zero)
                 {
-                    info.lightmapIndex = lightmaps.Count;
-                    lightmaps.Add(lightmap);
+                    info.lightmapOffsetScale = renderer.lightmapScaleOffset;
+                    Texture2D lightmapColor = LightmapSettings.lightmaps[renderer.lightmapIndex].lightmapColor;
+                    Texture2D lightmapDir = LightmapSettings.lightmaps[renderer.lightmapIndex].lightmapDir;
+
+                    info.lightmapIndex = lightmapsColor.IndexOf(lightmapColor);
+                    if (info.lightmapIndex == -1)
+                    {
+                        info.lightmapIndex = lightmapsColor.Count;
+                        lightmapsColor.Add(lightmapColor);
+                        lightmapsDir.Add(lightmapDir);
+                    }
+                    rendererInfos.Add(info);
                 }
 
-                rendererInfos.Add(info);
             }
         }
-
-        var lights = root.GetComponentsInChildren<Light>();
-
+        var lights = root.GetComponentsInChildren<Light>(true);
         foreach (Light l in lights)
-        {        
+        {
             LightInfo lightInfo = new LightInfo();
             lightInfo.light = l;
-            lightInfo.lightmapBaketype =(int) l.lightmapBakeType;
-            lightInfo.mixedLightingMode= (int) UnityEditor.LightmapEditorSettings.mixedBakeMode;            
+            lightInfo.lightmapBaketype = (int)l.lightmapBakeType;
+            lightInfo.mixedLightingMode = (int)UnityEditor.LightmapEditorSettings.mixedBakeMode;
             lightsInfo.Add(lightInfo);
-
         }
     }
 #endif
-
 }
