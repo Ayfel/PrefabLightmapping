@@ -29,6 +29,8 @@ public class PrefabLightmapData : MonoBehaviour
     [SerializeField]
     Texture2D[] m_LightmapsDir;
     [SerializeField]
+    Texture2D[] m_ShadowMasks;
+    [SerializeField]
     LightInfo[] m_LightInfo;
 
     void Awake()
@@ -44,7 +46,8 @@ public class PrefabLightmapData : MonoBehaviour
             combinedLightmaps[i + lightmaps.Length] = new LightmapData
             {
                 lightmapColor = m_LightmapsColor[i],
-                lightmapDir = m_LightmapsDir[i]
+                lightmapDir = m_LightmapsDir[i],
+                shadowMask = m_ShadowMasks[i],
             };
 
         }
@@ -100,15 +103,17 @@ public class PrefabLightmapData : MonoBehaviour
             var gameObject = instance.gameObject;
             var rendererInfos = new List<RendererInfo>();
             var lightmapsColor = new List<Texture2D>();
+            var lightmapsDir = new List<Texture2D>();
+            var shadowMasks = new List<Texture2D>();
             var lightInfos = new List<LightInfo>();
-            List<Texture2D> lightmapsDir = new List<Texture2D>();
 
-            GenerateLightmapInfo(gameObject, rendererInfos, lightmapsColor, lightmapsDir,lightInfos);
+            GenerateLightmapInfo(gameObject, rendererInfos, lightmapsColor, lightmapsDir,shadowMasks,lightInfos);
 
             instance.m_RendererInfo = rendererInfos.ToArray();
             instance.m_LightmapsColor = lightmapsColor.ToArray();
             instance.m_LightmapsDir = lightmapsDir.ToArray();
             instance.m_LightInfo = lightInfos.ToArray();
+            instance.m_ShadowMasks = shadowMasks.ToArray();
 
 
             var targetPrefab = PrefabUtility.GetCorrespondingObjectFromOriginalSource(instance.gameObject) as GameObject;
@@ -142,7 +147,7 @@ public class PrefabLightmapData : MonoBehaviour
         }
     }
 
-    static void GenerateLightmapInfo(GameObject root, List<RendererInfo> rendererInfos, List<Texture2D> lightmapsColor, List<Texture2D> lightmapsDir, List<LightInfo> lightsInfo)
+    static void GenerateLightmapInfo(GameObject root, List<RendererInfo> rendererInfos, List<Texture2D> lightmapsColor, List<Texture2D> lightmapsDir,List<Texture2D> shadowMasks, List<LightInfo> lightsInfo)
     {
         var renderers = root.GetComponentsInChildren<MeshRenderer>(true);
         foreach (MeshRenderer renderer in renderers)
@@ -156,6 +161,7 @@ public class PrefabLightmapData : MonoBehaviour
                     info.lightmapOffsetScale = renderer.lightmapScaleOffset;
                     Texture2D lightmapColor = LightmapSettings.lightmaps[renderer.lightmapIndex].lightmapColor;
                     Texture2D lightmapDir = LightmapSettings.lightmaps[renderer.lightmapIndex].lightmapDir;
+                    Texture2D shadowMask = LightmapSettings.lightmaps[renderer.lightmapIndex].shadowMask;
 
                     info.lightmapIndex = lightmapsColor.IndexOf(lightmapColor);
                     if (info.lightmapIndex == -1)
@@ -163,6 +169,7 @@ public class PrefabLightmapData : MonoBehaviour
                         info.lightmapIndex = lightmapsColor.Count;
                         lightmapsColor.Add(lightmapColor);
                         lightmapsDir.Add(lightmapDir);
+                        shadowMasks.Add(shadowMask);
                     }
                     rendererInfos.Add(info);
                 }
