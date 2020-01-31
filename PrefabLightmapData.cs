@@ -69,10 +69,10 @@ public class PrefabLightmapData : MonoBehaviour
                 var newlightmapdata = new LightmapData
                 {
                     lightmapColor = m_Lightmaps[i],
-                    lightmapDir = m_LightmapsDir[i],
-                    shadowMask = m_ShadowMasks[i],                    
+                    lightmapDir = m_LightmapsDir.Length == m_Lightmaps.Length ? m_LightmapsDir[i] : default,
+                    shadowMask = m_ShadowMasks.Length == m_Lightmaps.Length ? m_ShadowMasks[i] : default,
                 };
-                
+
                 combinedLightmaps.Add(newlightmapdata);
 
                 counttotal += 1;
@@ -86,7 +86,8 @@ public class PrefabLightmapData : MonoBehaviour
 
         lightmaps.CopyTo(combinedLightmaps2, 0);
         combinedLightmaps.ToArray().CopyTo(combinedLightmaps2, lightmaps.Length);
-        LightmapSettings.lightmapsMode = LightmapsMode.NonDirectional;
+
+        LightmapSettings.lightmapsMode = m_LightmapsDir.Length == m_Lightmaps.Length ? LightmapsMode.CombinedDirectional : LightmapsMode.NonDirectional;
         ApplyRendererInfo(m_RendererInfo, offsetsindexes, m_LightInfo);
         LightmapSettings.lightmaps = combinedLightmaps2;
     }
@@ -237,7 +238,7 @@ public class PrefabLightmapData : MonoBehaviour
 
                     rendererInfos.Add(info);
                 }
-                    
+
             }
         }
 
