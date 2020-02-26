@@ -70,7 +70,7 @@ public class PrefabLightmapData : MonoBehaviour
                 {
                     lightmapColor = m_Lightmaps[i],
                     lightmapDir = m_LightmapsDir.Length == m_Lightmaps.Length ? m_LightmapsDir[i] : default,
-                    shadowMask = m_ShadowMasks.Length == m_Lightmaps.Length ? m_ShadowMasks[i] : default,
+                    shadowMask = m_ShadowMasks.Length == m_Lightmaps.Length  ? m_ShadowMasks[i] : default,
                 };
 
                 combinedLightmaps.Add(newlightmapdata);
@@ -87,7 +87,18 @@ public class PrefabLightmapData : MonoBehaviour
         lightmaps.CopyTo(combinedLightmaps2, 0);
         combinedLightmaps.ToArray().CopyTo(combinedLightmaps2, lightmaps.Length);
 
-        LightmapSettings.lightmapsMode = m_LightmapsDir.Length == m_Lightmaps.Length ? LightmapsMode.CombinedDirectional : LightmapsMode.NonDirectional;
+        bool directional=true;
+
+        foreach(Texture2D t in m_LightmapsDir)
+        {
+            if (t == null)
+            {
+                directional = false;
+                break;
+            }
+        }
+
+        LightmapSettings.lightmapsMode = (m_LightmapsDir.Length == m_Lightmaps.Length && directional) ? LightmapsMode.CombinedDirectional : LightmapsMode.NonDirectional;
         ApplyRendererInfo(m_RendererInfo, offsetsindexes, m_LightInfo);
         LightmapSettings.lightmaps = combinedLightmaps2;
     }
