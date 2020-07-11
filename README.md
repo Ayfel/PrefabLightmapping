@@ -8,3 +8,5 @@ If you find problems when building make sure to check your graphics settings und
 ![Graphics Settings](https://user-images.githubusercontent.com/13970424/60190570-7dd05680-97f8-11e9-991f-f54b816a577f.png)
 
 Original idea came from Joachim_Ante in the Unity forums
+
+Feel free to use this project in all commercial and personal projects ;)
