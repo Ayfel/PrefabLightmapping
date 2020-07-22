@@ -69,8 +69,8 @@ public class PrefabLightmapData : MonoBehaviour
                 var newlightmapdata = new LightmapData
                 {
                     lightmapColor = m_Lightmaps[i],
-                    lightmapDir = m_LightmapsDir.Length == m_Lightmaps.Length ? m_LightmapsDir[i] : default,
-                    shadowMask = m_ShadowMasks.Length == m_Lightmaps.Length  ? m_ShadowMasks[i] : default,
+                    lightmapDir = m_LightmapsDir.Length == m_Lightmaps.Length ? m_LightmapsDir[i] : default(Texture2D),
+                    shadowMask = m_ShadowMasks.Length == m_Lightmaps.Length  ? m_ShadowMasks[i] : default(Texture2D),
                 };
 
                 combinedLightmaps.Add(newlightmapdata);
@@ -186,7 +186,7 @@ public class PrefabLightmapData : MonoBehaviour
             instance.m_LightmapsDir = lightmapsDir.ToArray();
             instance.m_LightInfo = lightsInfos.ToArray();
             instance.m_ShadowMasks = shadowMasks.ToArray();
-
+#if UNITY_2018_3_OR_NEWER
             var targetPrefab = PrefabUtility.GetCorrespondingObjectFromOriginalSource(instance.gameObject) as GameObject;
             if (targetPrefab != null)
             {
@@ -215,6 +215,14 @@ public class PrefabLightmapData : MonoBehaviour
                     PrefabUtility.ApplyPrefabInstance(instance.gameObject, InteractionMode.AutomatedAction);
                 }
             }
+#else
+            var targetPrefab = UnityEditor.PrefabUtility.GetPrefabParent(gameObject) as GameObject;
+            if (targetPrefab != null)
+            {
+                //UnityEditor.Prefab
+                UnityEditor.PrefabUtility.ReplacePrefab(gameObject, targetPrefab);
+            }
+#endif
         }
 
 
@@ -260,7 +268,11 @@ public class PrefabLightmapData : MonoBehaviour
             LightInfo lightInfo = new LightInfo();
             lightInfo.light = l;
             lightInfo.lightmapBaketype = (int)l.lightmapBakeType;
+#if UNITY_2018_1_OR_NEWER
             lightInfo.mixedLightingMode = (int)UnityEditor.LightmapEditorSettings.mixedBakeMode;
+#else
+            lightInfo.mixedLightingMode = (int)l.bakingOutput.lightmapBakeType;            
+#endif
             lightsInfo.Add(lightInfo);
 
         }
