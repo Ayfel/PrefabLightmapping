@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
-
+[ExecuteAlways]
 public class PrefabLightmapData : MonoBehaviour
 {
     [System.Serializable]
