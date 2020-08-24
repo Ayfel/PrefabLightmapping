@@ -268,7 +268,9 @@ public class PrefabLightmapData : MonoBehaviour
             LightInfo lightInfo = new LightInfo();
             lightInfo.light = l;
             lightInfo.lightmapBaketype = (int)l.lightmapBakeType;
-#if UNITY_2018_1_OR_NEWER
+#if UNITY_2020_1_OR_NEWER
+            lightInfo.mixedLightingMode = (int)UnityEditor.Lightmapping.lightingSettings.mixedBakeMode;            
+#elif UNITY_2018_1_OR_NEWER
             lightInfo.mixedLightingMode = (int)UnityEditor.LightmapEditorSettings.mixedBakeMode;
 #else
             lightInfo.mixedLightingMode = (int)l.bakingOutput.lightmapBakeType;            
