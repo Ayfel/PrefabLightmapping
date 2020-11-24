@@ -166,7 +166,7 @@ public class PrefabLightmapData : MonoBehaviour
             Debug.LogError("ExtractLightmapData requires that you have baked you lightmaps and Auto mode is disabled.");
             return;
         }
-        UnityEditor.Lightmapping.BakeAsync();
+        UnityEditor.Lightmapping.Bake();
 
         PrefabLightmapData[] prefabs = FindObjectsOfType<PrefabLightmapData>();
 
