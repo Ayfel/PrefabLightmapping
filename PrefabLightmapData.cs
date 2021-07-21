@@ -240,6 +240,8 @@ public class PrefabLightmapData : MonoBehaviour
 
                 if (renderer.lightmapScaleOffset != Vector4.zero)
                 {
+                    //1ibrium's pointed out this issue : https://docs.unity3d.com/ScriptReference/Renderer-lightmapIndex.html
+                    if(renderer.lightmapIndex < 0 || renderer.lightmapIndex == 0xFFFE) continue;
                     info.lightmapOffsetScale = renderer.lightmapScaleOffset;
 
                     Texture2D lightmap = LightmapSettings.lightmaps[renderer.lightmapIndex].lightmapColor;
