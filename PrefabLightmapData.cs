@@ -7,6 +7,9 @@ using UnityEngine.SceneManagement;
 [ExecuteAlways]
 public class PrefabLightmapData : MonoBehaviour
 {
+    [Tooltip("Reassigns shaders when applying the baked lightmaps. Might conflict with some shaders like transparent HDRP.")]
+    public bool releaseShaders = true;
+    
     [System.Serializable]
     struct RendererInfo
     {
@@ -124,7 +127,7 @@ public class PrefabLightmapData : MonoBehaviour
 
 
 
-    static void ApplyRendererInfo(RendererInfo[] infos, int[] lightmapOffsetIndex, LightInfo[] lightsInfo)
+    void ApplyRendererInfo(RendererInfo[] infos, int[] lightmapOffsetIndex, LightInfo[] lightsInfo)
     {
         for (int i = 0; i < infos.Length; i++)
         {
@@ -133,12 +136,18 @@ public class PrefabLightmapData : MonoBehaviour
             info.renderer.lightmapIndex = lightmapOffsetIndex[info.lightmapIndex];
             info.renderer.lightmapScaleOffset = info.lightmapOffsetScale;
 
-            // You have to release shaders.
-            Material[] mat = info.renderer.sharedMaterials;
-            for (int j = 0; j < mat.Length; j++)
+            if (releaseShaders)
             {
-                if (mat[j] != null && Shader.Find(mat[j].shader.name) != null)
-                    mat[j].shader = Shader.Find(mat[j].shader.name);
+                // You have to release shaders.
+                Material[] mat = info.renderer.sharedMaterials;
+                for (int j = 0; j < mat.Length; j++)
+                {
+                    if (mat[j] != null && Shader.Find(mat[j].shader.name) != null)
+                    {
+                        mat[j].shader = Shader.Find(mat[j].shader.name);
+                    }
+                    
+                }
             }
 
         }
