@@ -9,6 +9,8 @@ If you find problems when building make sure to check your graphics settings und
 
 *There is also an issue with Probuilder Objects so make sure to bake those meshes down so you don't use Probuilder objects in the prefabs.
 
+** I added an optional checkbox called "Release Shaders" that is true by default, this makes the system reassign the shaders when applying the lightmaps. In some cases this is not necessary and it might conflict with certain shader keywords, if you notice some of your materials losing shader features you can uncheck this and that might fix your specific issue. It is true by default.
+
 Original idea came from Joachim_Ante in the Unity forums
 
 Feel free to use this project in all commercial and personal projects ;)
